@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Art</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        section {
+            margin-bottom: 40px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            background: #007bff;
+            width: auto;
+        }
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+        .qr-btn {
+            margin-top: 5px;
+            background: #ffc107;
+            color: white;
+            width: auto;
+        }
+        .qr-btn:hover {
+            background: #e0a800;
+        }
+        #qr-reader {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Bitcoin Art</h1>
+
+    <section>
+        <h2>Encrypt Private Key</h2>
+        <input type="text" id="privateKey" placeholder="Enter Private Key" required>
+        <button class="qr-btn" id="scanPrivateKeyQR">Scan QR Code</button>
+        <input type="password" id="encryptionPassword" placeholder="Enter Password" required>
+        <button id="encryptButton">Encrypt</button>
+        <button class="copy-btn" id="copyEncrypted">Copy Encrypted Key</button>
+        <div class="output" id="encryptedOutput" style="display:none;"></div>
+    </section>
+
+    <section>
+        <h2>Decrypt Private Key</h2>
+        <input type="text" id="encryptedKey" placeholder="Enter Encrypted Key" required>
+        <button class="qr-btn" id="scanEncryptedKeyQR">Scan QR Code</button>
+        <input type="password" id="decryptionPassword" placeholder="Enter Password" required>
+        <button id="decryptButton">Decrypt</button>
+        <button class="copy-btn" id="copyDecrypted">Copy Decrypted Key</button>
+        <div class="output" id="decryptedOutput" style="display:none;"></div>
+    </section>
+
+    <div id="qr-reader" style="display:none;"></div>
+</div>
+
+<script>
+    // Encryption
+    document.getElementById('encryptButton').addEventListener('click', function() {
+        const privateKey = document.getElementById('privateKey').value;
+        const password = document.getElementById('encryptionPassword').value;
+        const encryptedKey = CryptoJS.AES.encrypt(privateKey, password).toString();
+        const outputDiv = document.getElementById('encryptedOutput');
+        outputDiv.style.display = 'block';
+        outputDiv.textContent = 'Encrypted Private Key: ' + encryptedKey;
+    });
+
+    // Decryption
+    document.getElementById('decryptButton').addEventListener('click', function() {
+        const encryptedKey = document.getElementById('encryptedKey').value;
+        const password = document.getElementById('decryptionPassword').value;
+        const bytes = CryptoJS.AES.decrypt(encryptedKey, password);
+        const decryptedKey = bytes.toString(CryptoJS.enc.Utf8);
+        const outputDiv = document.getElementById('decryptedOutput');
+        outputDiv.style.display = 'block';
+        outputDiv.textContent = 'Decrypted Private Key: ' + (decryptedKey || 'Invalid password or encrypted key');
+    });
+
+    // Copy Encrypted Key
+    document.getElementById('copyEncrypted').addEventListener('click', function() {
+        const encryptedKey = document.getElementById('encryptedOutput').textContent;
+        navigator.clipboard.writeText(encryptedKey).then(() => {
+            alert('Encrypted Key copied to clipboard');
+        });
+    });
+
+    // Copy Decrypted Key
+    document.getElementById('copyDecrypted').addEventListener('click', function() {
+        const decryptedKey = document.getElementById('decryptedOutput').textContent;
+        navigator.clipboard.writeText(decryptedKey).then(() => {
+            alert('Decrypted Key copied to clipboard');
+        });
+    });
+
+    // QR Code Scanner for Private Key
+    document.getElementById('scanPrivateKeyQR').addEventListener('click', function() {
+        const qrReader = document.getElementById('qr-reader');
+        qrReader.style.display = 'block';
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            qrCodeMessage => {
+                document.getElementById('privateKey').value = qrCodeMessage;
+                html5QrCode.stop();
+                qrReader.style.display = 'none';
+            },
+            errorMessage => {
+                // handle scanning errors
+            }
+        ).catch(err => {
+            console.log(err);
+        });
+    });
+
+    // QR Code Scanner for Encrypted Key
+    document.getElementById('scanEncryptedKeyQR').addEventListener('click', function() {
+        const qrReader = document.getElementById('qr-reader');
+        qrReader.style.display = 'block';
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            qrCodeMessage => {
+                document.getElementById('encryptedKey').value = qrCodeMessage;
+                html5QrCode.stop();
+                qrReader.style.display = 'none';
+            },
+            errorMessage => {
+                // handle scanning errors
+            }
+        ).catch(err => {
+            console.log(err);
+        });
+    });
+</script>
+
+</body>
+</html>
